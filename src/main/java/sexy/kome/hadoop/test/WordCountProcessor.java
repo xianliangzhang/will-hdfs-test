@@ -21,7 +21,7 @@ import java.util.StringTokenizer;
  * Created by ZXL on 2017/4/6.
  */
 public class WordCountProcessor  extends Configured implements Tool {
-    private static final String DEFAULT_INPUT_PATH = "lab/input/input.txt";
+    private static final String DEFAULT_INPUT_PATH = "lab/input/word.txt";
     private static final String DEFAULT_OUTPUT_PATH = "lab/output";
 
     private static class WordCountMapper extends Mapper<Object, Text, Text, IntWritable> {

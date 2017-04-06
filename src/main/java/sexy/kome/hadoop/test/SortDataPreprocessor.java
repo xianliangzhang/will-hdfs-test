@@ -19,8 +19,8 @@ import java.io.IOException;
  * Created by ZXL on 2017/4/6.
  */
 public class SortDataPreprocessor extends Configured implements Tool {
-    private static final String DEFAULT_INPUT_PATH = "lab/input/unsort.txt";
-    private static final String DEFAULT_OUTPUT_PATH = "lab/output";
+    private static final String DEFAULT_INPUT_PATH = "data/input/unsort.txt";
+    private static final String DEFAULT_OUTPUT_PATH = "data/output";
 
     private static class SortMapper extends Mapper<Object, Text, Text, IntWritable> {
 

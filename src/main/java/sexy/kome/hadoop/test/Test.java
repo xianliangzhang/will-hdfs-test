@@ -23,8 +23,8 @@ import java.util.StringTokenizer;
  * Created by Administrator on 2017/3/28.
  */
 public class Test extends Configured implements Tool {
-    private static final String DEFAULT_INPUT_PATH = "lab/input/input.txt";
-    private static final String DEFAULT_OUTPUT_PATH = "lab/output";
+    private static final String DEFAULT_INPUT_PATH = "data/input/input.txt";
+    private static final String DEFAULT_OUTPUT_PATH = "data/output";
 
     enum WordState{
         INVALIDATE, VALIDATE
