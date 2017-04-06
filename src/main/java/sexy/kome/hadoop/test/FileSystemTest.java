@@ -2,18 +2,15 @@ package sexy.kome.hadoop.test;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FsUrlStreamHandlerFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Administrator on 2017/3/28.
@@ -21,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class FileSystemTest {
     private static final URI HDFS_PREFIX_URI = URI.create("hdfs://192.168.140.138:9000");
 
-    private static final Configuration CONFIGURATION = new Configuration(){{
+    private static final Configuration CONFIGURATION = new Configuration() {{
     }};
 
     public static void readFromHDFS(String hdfs) throws Exception {

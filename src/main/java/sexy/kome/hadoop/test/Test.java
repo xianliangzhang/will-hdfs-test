@@ -1,8 +1,8 @@
 package sexy.kome.hadoop.test;
 
 
-import com.sun.corba.se.spi.ior.Writeable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -11,61 +11,77 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.util.GenericOptionsParser;
-import org.omg.CORBA_2_3.portable.OutputStream;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
 import sexy.kome.hadoop.wc.WordCount;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.StringTokenizer;
 
 /**
  * Created by Administrator on 2017/3/28.
  */
-public class Test {
+public class Test extends Configured implements Tool {
+    private static final String DEFAULT_INPUT_PATH = "lab/input/input.txt";
+    private static final String DEFAULT_OUTPUT_PATH = "lab/output";
 
-    public static class WordCountMapper extends Mapper<Object, Text, Text, IntWritable> {
-        private final static IntWritable one = new IntWritable(1);
-        private Text word = new Text();
+    enum WordState{
+        INVALIDATE, VALIDATE
+    }
 
+    private static class CounterMapper extends Mapper<Object, Text, Text, IntWritable> {
+
+        @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             StringTokenizer itr = new StringTokenizer(value.toString());
             while (itr.hasMoreTokens()) {
-                word.set(itr.nextToken());
-                context.write(word, one);
-                System.out.println(String.format("%s - %d", word, one));
+                String word = itr.nextToken();
+                if (word.contentEquals("xx")) {
+                    context.getCounter(WordState.INVALIDATE).increment(1L);
+                } else {
+                    context.getCounter(WordState.VALIDATE).increment(1L);
+                }
+
+                context.write(new Text("COUNTER"), new IntWritable(1));
             }
         }
     }
 
-    public static class WordCountReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
-        private IntWritable result = new IntWritable();
+    private static class CounterReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
 
+        @Override
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
-            int sum = 0;
-            for (IntWritable val : values) {
-                sum += val.get();
-                System.out.println(String.format("%s - %d", key, sum));
+            int counter = 0;
+            for (Iterator<IntWritable> iterator = values.iterator(); iterator.hasNext(); ) {
+                counter += iterator.next().get();
             }
-            result.set(sum);
-            context.write(key, result);
+            context.write(key, new IntWritable(counter));
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    @Override
+    public int run(String[] strings) throws Exception {
         Configuration conf = new Configuration();
 
         Job job = Job.getInstance(conf, "WordCount");
         job.setJarByClass(WordCount.class);
 
-        job.setMapperClass(WordCountMapper.class);
-        job.setReducerClass(WordCountReducer.class);
+        job.setMapperClass(CounterMapper.class);
+        job.setReducerClass(CounterReducer.class);
 
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
 
-        FileInputFormat.addInputPath(job, new Path("lab/input/input.txt"));
-        FileOutputFormat.setOutputPath(job, new Path("lab/output"));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        FileInputFormat.addInputPath(job, new Path(strings[0]));
+        FileOutputFormat.setOutputPath(job, new Path(strings[1]));
+
+        return job.waitForCompletion(true) ? 0 : 1;
+    }
+
+    public static void main(String[] args) throws Exception {
+        int exitCode = ToolRunner.run(new Test(), args.length == 0 ? new String[]{DEFAULT_INPUT_PATH, DEFAULT_OUTPUT_PATH} : args);
+        System.exit(exitCode);
     }
 
 }
