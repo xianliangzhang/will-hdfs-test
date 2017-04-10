@@ -12,6 +12,7 @@ import org.apache.hadoop.mapred.lib.db.DBWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.db.DBConfiguration;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -89,18 +90,18 @@ public class DBFormat extends Configured implements Tool {
         }
     }
 
-    static class DBFormatMapper extends Mapper<LongWritable, Operator, Text, Text> {
+    static class DBFormatMapper extends Mapper<LongWritable, Operator, LongWritable, Text> {
 
         @Override
         protected void map(LongWritable key, Operator value, Context context) throws IOException, InterruptedException {
-            context.write(new Text(String.valueOf(value.id)), new Text(value.name.concat("_").concat(value.email)));
+            context.write(new LongWritable(value.id), new Text(String.valueOf(value.id).concat(":").concat(value.name).concat(":").concat(value.email)));
         }
     }
 
-    static class DBFormatReducer extends Reducer<Text, Text, Text, Text> {
+    static class DBFormatReducer extends Reducer<LongWritable, Text, LongWritable, Text> {
 
         @Override
-        protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+        protected void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             for (Iterator<Text> iterator = values.iterator(); iterator.hasNext(); ) {
                 context.write(key, iterator.next());
             }
@@ -109,10 +110,12 @@ public class DBFormat extends Configured implements Tool {
 
     @Override
     public int run(String[] strings) throws Exception {
-        String dbDriver = "com.mysql.jdbc.Driver";
-        String dbURL = "jdbc:mysql://localhost:3306/kome";
-
         Configuration conf = new Configuration();
+        conf.setStrings("mapreduce.jdbc.driver.class", "com.mysql.jdbc.Driver");
+        conf.set("mapreduce.jdbc.url", "jdbc:mysql://10.146.16.208:8306/spider");
+        conf.set("mapreduce.jdbc.username", "root");
+        conf.set("mapreduce.jdbc.password", "123456");
+        conf.set("mapreduce.jdbc.input.table.name", "operator");
 
         Job job = Job.getInstance(conf, "DBFormat");
         job.setJarByClass(WordCount.class);
@@ -120,18 +123,19 @@ public class DBFormat extends Configured implements Tool {
         job.setMapperClass(DBFormatMapper.class);
         job.setReducerClass(DBFormatReducer.class);
 
-        job.setOutputKeyClass(Text.class);
+        job.setOutputKeyClass(LongWritable.class);
         job.setOutputValueClass(Text.class);
 
-        //FileInputFormat.addInputPath(job, new Path(strings[0]));
         FileOutputFormat.setOutputPath(job, new Path("data/output"));
+        DBConfiguration.configureDB(conf, "com.mysql.jdbc.Driver", "jdbc:mysql://10.146.16.208:8306/spider", "root", "123456");
+        DBInputFormat.setInput(job, Operator.class, "select id, name, email from operator", null);
 
         job.setInputFormatClass(DBInputFormat.class);
         return job.waitForCompletion(true) ? 0 : 1;
     }
 
     public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new Test(), args);
+        int exitCode = ToolRunner.run(new DBFormat(), args);
         System.exit(exitCode);
     }
 
