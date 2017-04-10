@@ -110,6 +110,10 @@ public class DBFormat extends Configured implements Tool {
 
     @Override
     public int run(String[] strings) throws Exception {
+        String dataQuery = "select r.id, s.station_id name, concat(r.temperature, '@mling.club') email from " +
+                "t_hadoop_weather_record r left join t_hadoop_weather_station s on r.station_id = s.station_id";
+        String countQuery = "select count(*) from t_hadoop_weather_record";
+
         Configuration conf = new Configuration();
         conf.setStrings("mapreduce.jdbc.driver.class", "com.mysql.jdbc.Driver");
         conf.set("mapreduce.jdbc.url", "jdbc:mysql://10.146.16.208:8306/spider");
@@ -127,8 +131,7 @@ public class DBFormat extends Configured implements Tool {
         job.setOutputValueClass(Text.class);
 
         FileOutputFormat.setOutputPath(job, new Path("data/output"));
-        DBConfiguration.configureDB(conf, "com.mysql.jdbc.Driver", "jdbc:mysql://10.146.16.208:8306/spider", "root", "123456");
-        DBInputFormat.setInput(job, Operator.class, "select id, name, email from operator", null);
+        DBInputFormat.setInput(job, Operator.class, dataQuery, countQuery);
 
         job.setInputFormatClass(DBInputFormat.class);
         return job.waitForCompletion(true) ? 0 : 1;
